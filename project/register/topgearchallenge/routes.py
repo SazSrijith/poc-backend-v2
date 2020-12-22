@@ -10,18 +10,29 @@ tgcregister= Blueprint('/tgcregister',__name__)
 #Api to add an entry to the TopgearC table
 @tgcregister.route('/add_topgearc', methods=['POST'])
 def add_topgearc():
-
-    employee_id = 101
-    if None in (request.get_json()['pop'],request.get_json()['topID'],request.get_json()['topTitle'],request.get_json()['dateTill'],request.get_json()['cash'],request.get_json()['cert'],request.get_json()['points']):
+    if request.headers.get('id'):
+        employee_id = request.headers.get('id')
+    else:
+        employee_id = 101
+    if None in (request.get_json()['pop'],request.get_json()['topID'],request.get_json()['topTitle'],request.get_json()['dateH'],request.get_json()['cert'],request.get_json()['points']):
         result = jsonify({"data": "False"})
         return result
     current_project = request.get_json()['pop']
     challenge_id = request.get_json()['topID']
     challenge_title = request.get_json()['topTitle']
-    cash_prize = request.get_json()['cash']
-    date = request.get_json()['dateTill']
-    certificate = request.get_json()['cert']
-    points = request.get_json()['points']
+
+    date = request.get_json()['dateH']
+
+    if request.get_json()['cert']:
+        certificate = request.get_json()['cert']
+    else:
+        certificate = None
+    try:
+        cash_prize = int(request.get_json()['cash'])
+        points = int(request.get_json()['points'])
+    except ValueError:
+        return jsonify({"data": "False"})
+
 
     project = Project.query.filter_by(project_name=current_project).first()
     current_project = project.project_id
@@ -52,10 +63,27 @@ def add_topgearc():
 #Api to get the entries in the TopgearC table
 @tgcregister.route('/topgearc_table', methods=['GET'])
 def topgearc_table():
-    employee_id = 101
-    tgcdata_list=[]
-    tgcEntries = Topgearc.query.filter_by(emp_id=employee_id)
+    if request.headers.get('id'):
+        employee_id = request.headers.get('id')
+    else:
+        employee_id = 101
+    if request.headers.get('role'):
+        role = (request.headers.get('role')).strip('\"')
+    else:
+        role = "Team Member"
+
+    if role == "Team Member":
+        tgcEntries = Topgearc.query.filter_by(emp_id=employee_id).all()
+    elif role == "Project Manager":
+        tgcEntries = Topgearc.query.filter_by(pm_id=employee_id).all()
+    elif role == "Delivery Manager":
+        tgcEntries = Topgearc.query.filter_by(dm_id=employee_id).all()
+    else:
+        return jsonify(False)
+
+    tgcdata_list = []
     for tgcEntry in tgcEntries:
-        case={"name":tgcEntry.emp.name,"project":tgcEntry.project.project_name,"pm":tgcEntry.pm.name,"dm":tgcEntry.dm.name,"tgid":tgcEntry.topgear_id,"chaltitle":tgcEntry.challenge_title,"points":tgcEntry.points,"cert":tgcEntry.certificate,"cashprize":tgcEntry.cash_prize,"date":tgcEntry.date}
-        tgcdata_list.append(case)
+        if tgcEntry.emp_id != tgcEntry.pm_id:
+            case={"name":tgcEntry.emp.name,"project":tgcEntry.project.project_name,"pm":tgcEntry.pm.name,"dm":tgcEntry.dm.name,"tgid":tgcEntry.topgear_id,"chaltitle":tgcEntry.challenge_title,"points":tgcEntry.points,"cert":tgcEntry.certificate,"cashprize":tgcEntry.cash_prize,"date":tgcEntry.date}
+            tgcdata_list.append(case)
     return jsonify(tgcdata_list)

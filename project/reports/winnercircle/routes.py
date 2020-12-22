@@ -12,16 +12,25 @@ wcreport= Blueprint('wcreport',__name__)
 @wcreport.route('/wctable_totalpoints', methods=['GET'])
 def wctable_totalpoints():
     total_points = 0
-    employee_id = 101
-    entry_list = Winnercircle.query.filter_by(emp_id=employee_id).all()
+    employee_id = request.headers.get('id')
+    role = (request.headers.get('role')).strip('\"')
+    if role == "Team Member":
+        entry_list = Winnercircle.query.filter_by(emp_id=employee_id).all()
+    elif role == "Project Manager":
+        entry_list = Winnercircle.query.filter_by(pm_id=employee_id).all()
+    elif role == "Delivery Manager":
+        entry_list = Winnercircle.query.filter_by(dm_id=employee_id).all()
+    else:
+        return jsonify(False)
     date = datetime.now()
     year_start_date = datetime(date.year, 1, 1)
     year_end_date = datetime(date.year, 12, 31)
     if entry_list:
         for entry in entry_list:
-            date = datetime.strptime(entry.date, '%Y-%m-%d')
-            if ( date >= year_start_date) and ( date <= year_end_date):
-                total_points = total_points + entry.points
+            if entry.emp_id != entry.pm_id:
+                date = datetime.strptime(entry.date, '%Y-%m-%d')
+                if ( date >= year_start_date) and ( date <= year_end_date):
+                    total_points = total_points + entry.points
     result = "Total Winner Circle Points : " + str(total_points)
     return jsonify({'total_points': result})
 
@@ -29,16 +38,25 @@ def wctable_totalpoints():
 @wcreport.route('/wctable_totaltimes', methods=['GET'])
 def wctable_totaltimes():
     total_times = 0
-    employee_id = 101
-    entry_list = Winnercircle.query.filter_by(emp_id=employee_id).all()
+    employee_id = request.headers.get('id')
+    role = (request.headers.get('role')).strip('\"')
+    if role == "Team Member":
+        entry_list = Winnercircle.query.filter_by(emp_id=employee_id).all()
+    elif role == "Project Manager":
+        entry_list = Winnercircle.query.filter_by(pm_id=employee_id).all()
+    elif role == "Delivery Manager":
+        entry_list = Winnercircle.query.filter_by(dm_id=employee_id).all()
+    else:
+        return jsonify(False)
     date = datetime.now()
     year_start_date = datetime(date.year, 1, 1)
     year_end_date = datetime(date.year, 12, 31)
     if entry_list:
         for entry in entry_list:
-            date = datetime.strptime(entry.date, '%Y-%m-%d')
-            if (date >= year_start_date) and (date <= year_end_date):
-                total_times = total_times + 1
+            if entry.emp_id != entry.pm_id:
+                date = datetime.strptime(entry.date, '%Y-%m-%d')
+                if (date >= year_start_date) and (date <= year_end_date):
+                    total_times = total_times + 1
     result = "Total Number of Recognitions Received : " + str(total_times)
     return jsonify({'total_times': result})
 
@@ -46,17 +64,26 @@ def wctable_totaltimes():
 @wcreport.route('/wctable_highest_point', methods=['GET'])
 def wctable_highest_point():
     highest_point = 0
-    employee_id = 101
-    entry_list = Winnercircle.query.filter_by(emp_id=employee_id).all()
+    employee_id = request.headers.get('id')
+    role = (request.headers.get('role')).strip('\"')
+    if role == "Team Member":
+        entry_list = Winnercircle.query.filter_by(emp_id=employee_id).all()
+    elif role == "Project Manager":
+        entry_list = Winnercircle.query.filter_by(pm_id=employee_id).all()
+    elif role == "Delivery Manager":
+        entry_list = Winnercircle.query.filter_by(dm_id=employee_id).all()
+    else:
+        return jsonify(False)
     date = datetime.now()
     year_start_date = datetime(date.year, 1, 1)
     year_end_date = datetime(date.year, 12, 31)
     if entry_list:
         for entry in entry_list:
-            date = datetime.strptime(entry.date, '%Y-%m-%d')
-            if (date >= year_start_date) and (date <= year_end_date):
-                if entry.points > highest_point:
-                    highest_point = entry.points
+            if entry.emp_id != entry.pm_id:
+                date = datetime.strptime(entry.date, '%Y-%m-%d')
+                if (date >= year_start_date) and (date <= year_end_date):
+                    if entry.points > highest_point:
+                        highest_point = entry.points
     result = "Highest Winner Circle Points Received : " + str(highest_point)
     return jsonify({'highest_point': result})
 
@@ -69,17 +96,29 @@ def wctable_graphdata():
         months.append(date.strftime("%B"))
         points.append(0)
 
-    employee_id = 101
-    entry_list = Winnercircle.query.filter_by(emp_id=employee_id).all()
+    employee_id = request.headers.get('id')
+    role = (request.headers.get('role')).strip('\"')
+    if role == "Team Member":
+        entry_list = Winnercircle.query.filter_by(emp_id=employee_id).all()
+    elif role == "Project Manager":
+        entry_list = Winnercircle.query.filter_by(pm_id=employee_id).all()
+    elif role == "Delivery Manager":
+        entry_list = Winnercircle.query.filter_by(dm_id=employee_id).all()
+    else:
+        return jsonify(False)
     date = datetime.now()
     year_start_date = datetime(date.year, 1, 1)
     year_end_date = datetime(date.year, 12, 31)
     if entry_list:
         for entry in entry_list:
-            date = datetime.strptime(entry.date, '%Y-%m-%d')
-            if (date >= year_start_date) and (date <= year_end_date):
-                month_no = date.strftime("%m")
-                points[int(month_no) - 1] = entry.points
+            if entry.emp_id != entry.pm_id:
+                date = datetime.strptime(entry.date, '%Y-%m-%d')
+                if (date >= year_start_date) and (date <= year_end_date):
+                    month_no = date.strftime("%m")
+                    if not points[int(month_no) - 1]:
+                        points[int(month_no) - 1] = entry.points
+                    else:
+                        points[int(month_no) - 1] = points[int(month_no) - 1] + entry.points
 
     return jsonify({'months': months, "points": points})
 

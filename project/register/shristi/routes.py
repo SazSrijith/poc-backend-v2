@@ -10,8 +10,10 @@ shregister= Blueprint('shreport',__name__)
 #Api to add an entry to the shristi table
 @shregister.route('/add_shristi', methods=['POST'])
 def add_shristi():
-
-    employee_id = 101
+    if request.headers.get('id'):
+        employee_id = request.headers.get('id')
+    else:
+        employee_id = 101
     if None in (request.get_json()['pop'],request.get_json()['shristiID'],request.get_json()['shristiTitle'],request.get_json()['des'],request.get_json()['dateP']):
         result = jsonify({"data": "False"})
         return result
@@ -54,12 +56,28 @@ def add_shristi():
 #Api to get the entries in the shristi table
 @shregister.route('/shristi_table', methods=['GET'])
 def shristi_table():
-    employee_id = 101
-    stdata_list=[]
+    if request.headers.get('id'):
+        employee_id = request.headers.get('id')
+    else:
+        employee_id = 101
+    if request.headers.get('role'):
+        role = (request.headers.get('role')).strip('\"')
+    else:
+        role = "Team Member"
 
-    stEntries = Shristi.query.filter_by(emp_id=employee_id)
+    if role == "Team Member":
+        stEntries = Shristi.query.filter_by(emp_id=employee_id).all()
+    elif role == "Project Manager":
+        stEntries = Shristi.query.filter_by(pm_id=employee_id).all()
+    elif role == "Delivery Manager":
+        stEntries = Shristi.query.filter_by(dm_id=employee_id).all()
+    else:
+        return jsonify(False)
+
+    stdata_list=[]
     for stEntry in stEntries:
-        case={"Name":stEntry.emp.name,"Project":stEntry.project.project_name,"PM":stEntry.pm.name,"DM":stEntry.dm.name,"ShristiID":stEntry.shristi_id,"ShristiTitle":stEntry.shristi_title,"Description":stEntry.description,"date":stEntry.date}
-        stdata_list.append(case)
+        if stEntry.emp_id != stEntry.pm_id:
+            case={"Name":stEntry.emp.name,"Project":stEntry.project.project_name,"PM":stEntry.pm.name,"DM":stEntry.dm.name,"ShristiID":stEntry.shristi_id,"ShristiTitle":stEntry.shristi_title,"Description":stEntry.description,"date":stEntry.date}
+            stdata_list.append(case)
     return jsonify(stdata_list)
 

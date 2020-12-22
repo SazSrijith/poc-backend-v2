@@ -10,8 +10,10 @@ wcregister= Blueprint('wcregister',__name__)
 #Api to add an entry to the winnercircle table
 @wcregister.route('/add_winnercircle', methods=['POST'])
 def add_wc():
-    
-    employee_id = 101
+    if request.headers.get('id'):
+        employee_id = request.headers.get('id')
+    else:
+        employee_id = 101
     if None in (request.get_json()['pop'],request.get_json()['des'],request.get_json()['rFrom'],request.get_json()['dateP'],request.get_json()['wcPoints']):
         result = jsonify({"data": "False"})
         return result
@@ -19,13 +21,10 @@ def add_wc():
     description=request.get_json()['des']
     received_from=request.get_json()['rFrom']
     date=request.get_json()['dateP']
-    points = int(request.get_json()['wcPoints'])
-
-    print("current_project= ", request.get_json()['pop'])
-    print("description= ",request.get_json()['des'])
-    print("recieved_from= ",request.get_json()['rFrom'])
-    print("date= ",request.get_json()['dateP'])
-    print("points= ",request.get_json()['wcPoints'])
+    try:
+        points = int(request.get_json()['wcPoints'])
+    except ValueError:
+        return jsonify({"data": "False"})
 
     project = Project.query.filter_by(project_name=current_project).first()
     current_project = project.project_id
@@ -54,11 +53,26 @@ def add_wc():
 #Api to get the entries in the winnercircle table
 @wcregister.route('/winnercircle_table', methods=['GET'])
 def winnercircle_table():
-    employee_id = 101
-    wcdata_list=[]
+    if request.headers.get('id'):
+        employee_id = request.headers.get('id')
+    else:
+        employee_id = 101
+    if request.headers.get('role'):
+        role = (request.headers.get('role')).strip('\"')
+    else:
+        role = "Team Member"
+    if role == "Team Member":
+        wcEntries = Winnercircle.query.filter_by(emp_id=employee_id).all()
+    elif role == "Project Manager":
+        wcEntries = Winnercircle.query.filter_by(pm_id=employee_id).all()
+    elif role == "Delivery Manager":
+        wcEntries = Winnercircle.query.filter_by(dm_id=employee_id).all()
+    else:
+        return jsonify(False)
 
-    wcEntries = Winnercircle.query.filter_by(emp_id=employee_id)
+    wcdata_list = []
     for wcEntry in wcEntries:
-        case={"Name":wcEntry.emp.name,"Project":wcEntry.project.project_name,"PM":wcEntry.pm.name,"DM":wcEntry.dm.name,"Description":wcEntry.description,"Points":wcEntry.points,"From":wcEntry.received_from,"date":wcEntry.date}
-        wcdata_list.append(case)
+        if wcEntry.emp_id != wcEntry.pm_id:
+            case={"Name":wcEntry.emp.name,"Project":wcEntry.project.project_name,"PM":wcEntry.pm.name,"DM":wcEntry.dm.name,"Description":wcEntry.description,"Points":wcEntry.points,"From":wcEntry.received_from,"date":wcEntry.date}
+            wcdata_list.append(case)
     return jsonify(wcdata_list)

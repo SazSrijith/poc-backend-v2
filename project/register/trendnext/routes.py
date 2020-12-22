@@ -10,7 +10,10 @@ tnregister= Blueprint('tnregister',__name__)
 #Api to add an entry to the trendnext table
 @tnregister.route('/add_trendnext', methods=['POST'])
 def add_trendnxt():
-    employee_id = 101
+    if request.headers.get('id'):
+        employee_id = request.headers.get('id')
+    else:
+        employee_id = 101
     threshold_points = 0
     financial_year = "2019-2020"
     if None in (request.get_json()['pop'],request.get_json()['topics'],request.get_json()['trendScore'],request.get_json()['dateT']):
@@ -18,7 +21,12 @@ def add_trendnxt():
         return result
     current_project = request.get_json()['pop']
     topic = request.get_json()['topics']
-    points = request.get_json()['trendScore']
+
+    try:
+        points = int(request.get_json()['trendScore'])
+    except ValueError:
+        return jsonify({"data": "False"})
+
     date = request.get_json()['dateT']
 
     employee = Employee.query.filter_by(emp_id = employee_id).first()
@@ -59,11 +67,34 @@ def add_trendnxt():
 #Api to get the entries in the trendnext table
 @tnregister.route('/trendnext_table', methods=['GET'])
 def trendnext_table():
-    employee_id = 101
+    if request.headers.get('id'):
+        employee_id = request.headers.get('id')
+        print("id recieved")
+    else:
+        employee_id = 101
+        print("id not recieved")
+    if request.headers.get('role'):
+        role = (request.headers.get('role')).strip('\"')
+        print("role recieved")
+        print("role not recieved")
+    else:
+        role = "Team Member"
+
+    if role == "Team Member":
+        tnEntries = Trendnxt.query.filter_by(emp_id=employee_id).all()
+    elif role == "Project Manager":
+        tnEntries = Trendnxt.query.filter_by(pm_id=employee_id).all()
+    elif role == "Delivery Manager":
+        tnEntries = Trendnxt.query.filter_by(dm_id=employee_id).all()
+    else:
+        print("ERROR")
+        return jsonify(False)
+
     tndata_list=[]
 
-    tnEntries = Trendnxt.query.filter_by(emp_id=employee_id)
+
     for tnEntry in tnEntries:
-        case={"Name":tnEntry.emp.name,"Project":tnEntry.project.project_name,"PM":tnEntry.pm.name,"DM":tnEntry.dm.name,"Topic":tnEntry.topic,"Points":tnEntry.points,"Threshold":tnEntry.threshold_points,"date":tnEntry.date,"FY":tnEntry.financial_year}
-        tndata_list.append(case)
+        if tnEntry.emp_id != tnEntry.pm_id:
+            case={"Name":tnEntry.emp.name,"Project":tnEntry.project.project_name,"PM":tnEntry.pm.name,"DM":tnEntry.dm.name,"Topic":tnEntry.topic,"Points":tnEntry.points,"Threshold":tnEntry.threshold_points,"date":tnEntry.date,"FY":tnEntry.financial_year}
+            tndata_list.append(case)
     return jsonify(tndata_list)

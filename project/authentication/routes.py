@@ -70,9 +70,9 @@ def signin():
     if not projects:
         return jsonify({"data": "False"})
 
-    session['id'] = id
-    session['role'] = role
-    return jsonify({"data": "True"})
+    # session['id'] = id
+    # session['role'] = role
+    return jsonify({"data": "True","id":id,"role":role})
 
 
 # To display the user with his password after validation
@@ -82,10 +82,10 @@ def forgot_password():
     employee_email = request.get_json()['email']
     employee = User.query.filter_by(emp_id = employee_id).first()
     if not employee:
-        return jsonify({"msg": "The given employee ID is not registered"})
+        return jsonify({"msg": "False", "message": "Incorrect Credentials"})
     if not employee.emp.email == employee_email:
-        return jsonify({"msg": "Wrong Email ID"})
-    return jsonify(employee.password)
+        return jsonify({"msg": "False", "message": "Incorrect Credentials"})
+    return jsonify({"msg":"True","password":employee.password})
 
 #To get all the details in user table
 @auth.route('/get_usertable', methods=['GET'])
